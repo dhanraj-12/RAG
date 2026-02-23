@@ -55,7 +55,7 @@ rag_system/
     
     - Performs a similarity search in the vector database to retrieve relevant child documents based on the query
     
-    - perform a BM25 search parrelly on exact query to get the relevant document.
+    - perform a BM25 search Parallelly on exact query to get the relevant document.
     
     - Combines the retrieved documents using Reciprocal Rank Fusion (RRF) to ensure that the most relevant sections are prioritized.
     
