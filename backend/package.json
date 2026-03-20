@@ -2,10 +2,12 @@
   "name": "rag-backend",
   "version": "1.0.0",
   "description": "Notebook-based AI Chatbot Backend using Gemini, Node.js, MongoDB, and S3",
-  "main": "src/server.js",
+  "main": "dist/server.js",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "nodemon src/server.js"
+    "start": "node dist/server.js",
+    "dev": "nodemon --exec ts-node src/server.ts",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [],
   "author": "",
@@ -24,6 +26,15 @@
     "multer-s3": "^3.0.1"
   },
   "devDependencies": {
-    "nodemon": "^3.1.7"
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/multer": "^1.4.12",
+    "@types/multer-s3": "^3.0.3",
+    "@types/node": "^22.0.0",
+    "nodemon": "^3.1.7",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.0"
   }
 }
