@@ -26,7 +26,9 @@ from langchain_classic.schema import Document
 from sentence_transformers import CrossEncoder
 from concurrent.futures import ThreadPoolExecutor
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, send_file
+from flask_cors import CORS
+import tempfile
 
 import os
 import re
@@ -737,6 +739,7 @@ def generate_submission_csv(input_path, output_path="submission.csv"):
 # ──────────────────────────────────────────────
 
 app = Flask(__name__)
+CORS(app)
 
 
 @app.route("/api/health", methods=["GET"])
@@ -831,6 +834,47 @@ def download_file(filename):
     # For simplicity, we'll use the root of the Rag_Module
     directory = os.getcwd()
     return send_from_directory(directory, filename, as_attachment=True)
+
+
+@app.route("/api/upload_and_generate_csv", methods=["POST"])
+def upload_and_generate_csv():
+    """Accept a queries.json file upload, generate CSV, and return it for download."""
+    if "file" not in request.files:
+        return jsonify({"success": False, "error": "No file uploaded"}), 400
+
+    file = request.files["file"]
+    if not file.filename or not file.filename.endswith(".json"):
+        return jsonify({"success": False, "error": "Only .json files are allowed"}), 400
+
+    # Save uploaded file to a temp location
+    with tempfile.NamedTemporaryFile(mode="wb", suffix=".json", delete=False) as tmp_in:
+        file.save(tmp_in)
+        input_path = tmp_in.name
+
+    output_path = input_path.replace(".json", ".csv")
+
+    print(f"\n📄 Received file upload: {file.filename}")
+    t0 = time.time()
+
+    try:
+        generate_submission_csv(input_path, output_path)
+        latency: float = round(time.time() - t0, 2)  # type: ignore[call-overload]
+        print(f"✅ CSV generated in {latency}s")
+
+        return send_file(
+            output_path,
+            mimetype="text/csv",
+            as_attachment=True,
+            download_name="submission.csv",
+        )
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+    finally:
+        # Cleanup temp files
+        if os.path.exists(input_path):
+            os.remove(input_path)
+
 
 # ──────────────────────────────────────────────
 # Main

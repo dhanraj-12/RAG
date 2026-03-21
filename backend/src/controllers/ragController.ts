@@ -31,16 +31,16 @@ const generateBulkCSV = async (req: Request, res: Response): Promise<void> => {
 
     if (response.data.success) {
       const downloadUrl = `${RAG_API_URL}${response.data.download_url}`;
-      
+
       // We could either redirect or fetch and stream. 
       // Fetching and streaming is safer as it hides the Python backend URL.
       const fileResponse = await axios.get(downloadUrl, { responseType: "stream" });
-      
+
       res.setHeader("Content-Disposition", `attachment; filename=${outputFilename}`);
       res.setHeader("Content-Type", "text/csv");
-      
+
       fileResponse.data.pipe(res);
-      
+
       // Cleanup uploaded JSON after some time or immediately after stream ends
       res.on("finish", () => {
         try {
