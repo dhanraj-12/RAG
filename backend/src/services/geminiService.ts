@@ -6,10 +6,10 @@ export interface ChatMessage {
 }
 
 /**
- * Step 1 — Context Check
- * Determines if the current prompt relates to the ongoing conversation.
- * If related, returns an enhanced prompt with relevant context woven in.
- * If not related, returns the original prompt as-is.
+ * Step 1 — Smart Query Rewriter for RAG
+ * Determines if the current prompt needs context from previous conversation.
+ * If self-contained, returns it as-is. If context-dependent, rewrites it
+ * into a fully self-contained query using summary and history.
  */
 const checkContext = async (
   currentPrompt: string,
@@ -18,53 +18,73 @@ const checkContext = async (
 ): Promise<{ isRelated: boolean; enhancedPrompt: string }> => {
   const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite-preview" });
 
-  const systemInstruction = `You are a context analysis assistant. Your job is to determine whether a new user message relates to the ongoing conversation context provided below.
+  const systemInstruction = `You are a smart query rewriter for a RAG system.
 
-You will be given:
-1. A conversation summary (if available)
-2. Recent messages from the conversation
-3. The new user message
+Your job is to decide whether the current user query needs context from previous conversation or not.
 
-Respond ONLY with valid JSON in this exact format (no markdown, no code fences):
-{"isRelated": true/false, "enhancedPrompt": "..."}
+Inputs:
+1. Conversation Summary: ${summary || "None"}
+2. Previous Messages:
+${recentMessages.length > 0 ? recentMessages.map((msg) => `${msg.role}: ${msg.text}`).join("\n") : "None"}
+3. Current User Query: ${currentPrompt}
 
-Rules:
-- If the new message relates to or builds upon the conversation context, set "isRelated" to true and rewrite "enhancedPrompt" to incorporate relevant context so it can stand alone.
-- If the new message is completely unrelated (a new topic, a greeting, a standalone question), set "isRelated" to false and set "enhancedPrompt" to the original user message exactly as-is.
-- Keep the enhanced prompt concise — only add necessary context, don't repeat the entire history.`;
+Instructions:
 
-  let contextBlock = "";
-  if (summary) {
-    contextBlock += `[Conversation Summary]\n${summary}\n\n`;
-  }
-  if (recentMessages.length > 0) {
-    contextBlock += `[Recent Messages]\n`;
-    for (const msg of recentMessages) {
-      contextBlock += `${msg.role}: ${msg.text}\n`;
-    }
-    contextBlock += "\n";
-  }
-  contextBlock += `[New User Message]\n${currentPrompt}`;
+- If the current query is SELF-CONTAINED (clear, complete, and understandable on its own), 
+  then RETURN IT EXACTLY AS-IS. Do NOT modify anything.
+
+- If the current query is CONTEXT-DEPENDENT (e.g., contains pronouns like "it", "they", 
+  "that", "those", or refers to previous discussion), then rewrite it into a 
+  FULLY SELF-CONTAINED query using the summary and history.
+
+- Only include relevant context. Do NOT add unnecessary details.
+
+- Keep the rewritten query concise and natural.
+
+- Do NOT change the meaning of the query.
+
+- Do NOT always rewrite — rewriting should happen ONLY when necessary.
+
+Examples:
+
+1.
+Query: "What is photosynthesis?"
+Output: "What is photosynthesis?"
+
+2.
+Query: "What are its characteristics?"
+(Previous context: talking about enzymes)
+Output: "What are the characteristics of enzymes?"
+
+3.
+Query: "Explain it in simple terms"
+(Previous context: Newton's laws)
+Output: "Explain Newton's laws in simple terms"
+
+Now process the input.
+
+Return ONLY the final query.
+Do NOT explain your reasoning.`;
 
   const contents = [
-    { role: "user" as const, parts: [{ text: `${systemInstruction}\n\n${contextBlock}` }] },
+    { role: "user" as const, parts: [{ text: systemInstruction }] },
   ];
 
   try {
     const result = await model.generateContent({ contents });
-    const responseText = result.response.text().trim();
+    const enhancedPrompt = result.response.text().trim();
 
-    // Parse JSON response, stripping any accidental markdown fences
-    const cleanJson = responseText.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-    const parsed = JSON.parse(cleanJson);
+    // If the LLM returned something meaningful, use it; otherwise fall back
+    if (!enhancedPrompt) {
+      return { isRelated: false, enhancedPrompt: currentPrompt };
+    }
 
-    return {
-      isRelated: Boolean(parsed.isRelated),
-      enhancedPrompt: parsed.enhancedPrompt || currentPrompt,
-    };
+    const isRelated = enhancedPrompt.toLowerCase() !== currentPrompt.toLowerCase();
+    console.log(`[Context Check] Original: "${currentPrompt}" → Enhanced: "${enhancedPrompt}" (rewritten: ${isRelated})`);
+
+    return { isRelated, enhancedPrompt };
   } catch (error) {
     console.error("Context check failed, falling back to original prompt:", error);
-    // On failure, fall back to treating it as unrelated — send original prompt
     return { isRelated: false, enhancedPrompt: currentPrompt };
   }
 };

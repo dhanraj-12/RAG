@@ -3,7 +3,8 @@ import Chat from "../models/Chat";
 import Message from "../models/Message";
 import ChatSummary from "../models/ChatSummary";
 import Notebook from "../models/Notebook";
-import { checkContext, generateResponse, ChatMessage } from "../services/geminiService";
+import { checkContext, ChatMessage } from "../services/geminiService";
+import { queryRAG } from "../services/ragService";
 import { checkAndSummarize } from "../services/summarizationService";
 import { sendSuccess, sendError } from "../utils/responseHandler";
 import { AuthRequest } from "../middleware/authMiddleware";
@@ -122,8 +123,8 @@ const sendMessage = async (req: AuthRequest, res: Response): Promise<void> => {
     // --- Step 1: Context Check ---
     const { enhancedPrompt } = await checkContext(text, summaryText, chatHistory);
 
-    // --- Step 2: Response Generation ---
-    const aiResponseText = await generateResponse(enhancedPrompt, summaryText, chatHistory);
+    // --- Step 2: Query RAG Backend ---
+    const ragResponse = await queryRAG(enhancedPrompt);
 
     // --- Save assistant message with next sequence number ---
     const assistantSeq = userSeq + 1;
@@ -132,7 +133,8 @@ const sendMessage = async (req: AuthRequest, res: Response): Promise<void> => {
       sequenceNumber: assistantSeq,
       role: "assistant",
       contentType: "text",
-      text: aiResponseText,
+      text: ragResponse.answer,
+      citations: ragResponse.citations,
     });
 
     // --- Update chat message count ---

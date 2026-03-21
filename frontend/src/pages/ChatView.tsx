@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, FormEvent, KeyboardEvent, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { chatAPI, Message } from '../api/services';
+import { chatAPI, Message, Citation } from '../api/services';
 import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Send, Bot, User, Sparkles, RotateCcw, AlertCircle, FileWarning } from 'lucide-react';
+import { ArrowLeft, Send, Bot, User, Sparkles, RotateCcw, AlertCircle, FileWarning, BookOpen } from 'lucide-react';
 
 export default function ChatView() {
   const { chatId } = useParams<{ chatId: string }>();
@@ -162,9 +162,80 @@ export default function ChatView() {
                   }}
                 >
                   {msg.role === 'assistant' ? (
-                    <div className="md-content">
-                      <ReactMarkdown>{msg.text}</ReactMarkdown>
-                    </div>
+                    <>
+                      <div className="md-content">
+                        <ReactMarkdown>{msg.text}</ReactMarkdown>
+                      </div>
+
+                      {/* Citations / Sources */}
+                      {msg.citations && msg.citations.length > 0 && (
+                        <div style={{
+                          marginTop: '14px',
+                          paddingTop: '12px',
+                          borderTop: '1px solid rgba(255,255,255,0.08)',
+                        }}>
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            marginBottom: '10px',
+                            fontSize: '0.7rem',
+                            fontWeight: 600,
+                            color: 'var(--text-muted)',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                          }}>
+                            <BookOpen size={12} />
+                            <span>Sources</span>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {msg.citations.map((cite, idx) => (
+                              <div
+                                key={idx}
+                                style={{
+                                  padding: '10px 12px',
+                                  borderRadius: '8px',
+                                  backgroundColor: 'rgba(99, 102, 241, 0.06)',
+                                  border: '1px solid rgba(99, 102, 241, 0.12)',
+                                  fontSize: '0.73rem',
+                                  lineHeight: '1.7',
+                                }}
+                              >
+                                {/* Source Tag */}
+                                <span style={{
+                                  backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                                  color: '#818cf8',
+                                  padding: '3px 8px',
+                                  borderRadius: '5px',
+                                  fontWeight: 700,
+                                  fontSize: '0.65rem',
+                                  marginBottom: '6px',
+                                  display: 'inline-block',
+                                }}>
+                                  {cite.source_tag}
+                                </span>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '6px' }}>
+                                  <div><span style={{ color: 'var(--text-muted, #94a3b8)', fontWeight: 600 }}>Chapter:</span> <span style={{ color: 'var(--text-primary, #e2e8f0)' }}>{cite.chapter}</span></div>
+                                  {cite.section_name && (
+                                    <div><span style={{ color: 'var(--text-muted, #94a3b8)', fontWeight: 600 }}>Section Name:</span> <span style={{ color: 'var(--text-primary, #e2e8f0)' }}>{cite.section_name}</span></div>
+                                  )}
+                                  {cite.section && (
+                                    <div><span style={{ color: 'var(--text-muted, #94a3b8)', fontWeight: 600 }}>Section Number:</span> <span style={{ color: 'var(--text-primary, #e2e8f0)' }}>{cite.section}</span></div>
+                                  )}
+                                  {cite.page_start > 0 && (
+                                    <div><span style={{ color: 'var(--text-muted, #94a3b8)', fontWeight: 600 }}>Page Number Start:</span> <span style={{ color: 'var(--text-primary, #e2e8f0)' }}>{cite.page_start}</span></div>
+                                  )}
+                                  {cite.page_end > 0 && (
+                                    <div><span style={{ color: 'var(--text-muted, #94a3b8)', fontWeight: 600 }}>Page Number End:</span> <span style={{ color: 'var(--text-primary, #e2e8f0)' }}>{cite.page_end}</span></div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
                   ) : (
                     <p style={{ color: '#ffffff' }}>
                       {msg.text}

@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'axios';
 
-const API_BASE_URL = 'http://localhost:5001/api';
+const API_BASE_URL = 'http://http://65.2.80.174:5001/api';
 
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,

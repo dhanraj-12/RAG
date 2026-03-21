@@ -41,6 +41,15 @@ export interface Chat {
   createdAt: string;
 }
 
+export interface Citation {
+  chapter: string;
+  page_start: number;
+  page_end: number;
+  section: string;
+  section_name: string;
+  source_tag: string;
+}
+
 export interface Message {
   _id: string;
   chatId: string;
@@ -48,6 +57,7 @@ export interface Message {
   contentType: 'text' | 'image' | 'mixed';
   text: string;
   imageUrls: string[];
+  citations?: Citation[];
   createdAt: string;
 }
 

@@ -1,5 +1,14 @@
 import mongoose, { Document, Model } from "mongoose";
 
+export interface ICitation {
+  chapter: string;
+  page_start: number;
+  page_end: number;
+  section: string;
+  section_name: string;
+  source_tag: string;
+}
+
 export interface IMessage extends Document {
   chatId: mongoose.Types.ObjectId;
   sequenceNumber: number;
@@ -7,8 +16,18 @@ export interface IMessage extends Document {
   contentType: "text" | "image" | "mixed";
   text: string;
   imageUrls: string[];
+  citations: ICitation[];
   createdAt: Date;
 }
+
+const citationSchema = new mongoose.Schema({
+  chapter: { type: String, default: "" },
+  page_start: { type: Number, default: 0 },
+  page_end: { type: Number, default: 0 },
+  section: { type: String, default: "" },
+  section_name: { type: String, default: "" },
+  source_tag: { type: String, default: "" },
+}, { _id: false });
 
 const messageSchema = new mongoose.Schema({
   chatId: { type: mongoose.Schema.Types.ObjectId, ref: "Chat", required: true },
@@ -17,6 +36,7 @@ const messageSchema = new mongoose.Schema({
   contentType: { type: String, enum: ["text", "image", "mixed"], default: "text" },
   text: { type: String, default: "" },
   imageUrls: { type: [String], default: [] },
+  citations: { type: [citationSchema], default: [] },
   createdAt: { type: Date, default: Date.now },
 });
 
@@ -25,3 +45,4 @@ messageSchema.index({ chatId: 1, sequenceNumber: 1 });
 
 const Message: Model<IMessage> = mongoose.model<IMessage>("Message", messageSchema);
 export default Message;
+
