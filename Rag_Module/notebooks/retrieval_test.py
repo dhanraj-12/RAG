@@ -474,10 +474,9 @@ for i, entry in enumerate(answerable_entries):
     eval_result["stage_1"] = {
         "fused_recall@k": compute_recall_at_k(fused_docs, golden_sections, TOP_K_RETRIEVE),
         "fused_hit_rate": compute_hit_rate(fused_docs, golden_sections, TOP_K_RETRIEVE),
-        "context_precision": compute_precision_at_k(fused_docs, golden_sections, TOP_K_RETRIEVE),
     }
     print(f"  Stage 1: Fused Recall={eval_result['stage_1']['fused_recall@k']:.2f} | "
-          f"Precision={eval_result['stage_1']['context_precision']:.2f}")
+          f"Hit Rate={eval_result['stage_1']['fused_hit_rate']:.2f}")
 
     # ── STAGE 2: After Reranking ──
     t0 = time.time()
@@ -671,7 +670,6 @@ if answerable_results:
     print(f"\n── Stage 1: After RRF Fusion ──")
     print(f"  Fused Recall@{TOP_K_RETRIEVE}:  {avg([x['fused_recall@k'] for x in s1]):.4f}")
     print(f"  Fused Hit Rate:     {avg([x['fused_hit_rate'] for x in s1]):.4f}")
-    print(f"  Context Precision:  {avg([x['context_precision'] for x in s1]):.4f}")
 
     # Stage 2
     s2 = [r["stage_2"] for r in answerable_results if "stage_2" in r]
@@ -740,7 +738,6 @@ summary = {
     },
     "stage_1": {
         "fused_recall": avg([r["stage_1"]["fused_recall@k"] for r in answerable_results if "stage_1" in r]),
-        "context_precision": avg([r["stage_1"]["context_precision"] for r in answerable_results if "stage_1" in r]),
     },
     "stage_2": {
         "ndcg": avg([r["stage_2"]["ndcg@k"] for r in answerable_results if "stage_2" in r]),

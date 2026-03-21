@@ -1,15 +1,13 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import { authAPI } from '../api/services';
 import AppLayout from '../components/AppLayout';
 import { motion } from 'framer-motion';
-import { ArrowLeft, User, Mail, Calendar, Save, Sun, Moon, CheckCircle } from 'lucide-react';
+import { ArrowLeft, User, Mail, Calendar, Save, CheckCircle } from 'lucide-react';
 
 export default function Settings() {
   const { user, updateUser } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
@@ -35,38 +33,38 @@ export default function Settings() {
   const formatDate = (d?: string) => d ? new Date(d).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '';
 
   return (
-    <AppLayout title="Settings">
-      <div style={{ maxWidth: '560px' }}>
-        <div style={{ marginBottom: '24px' }}>
-          <button onClick={() => navigate('/')} className="btn btn-ghost" style={{ padding: '4px 0', marginBottom: '8px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            <ArrowLeft size={14} /> Back
+    <AppLayout chatTitle="Settings">
+      <div className="main-content" style={{ maxWidth: '520px' }}>
+        <div style={{ marginBottom: '20px' }}>
+          <button onClick={() => navigate('/')} className="btn btn-ghost" style={{ padding: '3px 0', marginBottom: '6px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+            <ArrowLeft size={13} /> Back
           </button>
           <h1 className="page-title">Settings</h1>
         </div>
 
         {/* Profile Section */}
-        <motion.div className="card" style={{ marginBottom: '16px' }}
-          initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0 }}>
-          <h2 className="section-title" style={{ marginBottom: '16px' }}>Profile</h2>
+        <motion.div className="card" style={{ marginBottom: '14px' }}
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+          <h2 className="section-title" style={{ marginBottom: '14px' }}>Profile</h2>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px', padding: '14px', background: 'var(--bg-input)', borderRadius: '10px', border: '1px solid var(--border)' }}>
-            <div className="card-icon" style={{ width: '44px', height: '44px', borderRadius: '10px' }}>
-              <User size={20} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '18px', padding: '12px', background: 'var(--bg-input)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+            <div className="card-icon" style={{ width: '40px', height: '40px', borderRadius: 'var(--radius-md)' }}>
+              <User size={18} />
             </div>
             <div>
-              <p style={{ fontWeight: 600, fontSize: '0.95rem' }}>{user?.name}</p>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <Mail size={12} /> {user?.email}
+              <p style={{ fontWeight: 600, fontSize: '0.9rem' }}>{user?.name}</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <Mail size={11} /> {user?.email}
               </p>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
-                <Calendar size={12} /> Joined {formatDate(user?.createdAt)}
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '1px' }}>
+                <Calendar size={11} /> Joined {formatDate(user?.createdAt)}
               </p>
             </div>
           </div>
 
           <form onSubmit={handleSave}>
             {error && <div className="banner-error">{error}</div>}
-            {message && <div className="banner-success"><CheckCircle size={14} /> {message}</div>}
+            {message && <div className="banner-success"><CheckCircle size={13} /> {message}</div>}
 
             <div className="form-group">
               <label className="form-label">Name</label>
@@ -77,25 +75,10 @@ export default function Settings() {
               <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </div>
             <motion.button type="submit" className="btn btn-primary" disabled={saving}
-              style={{ width: '100%', justifyContent: 'center', padding: '11px' }} whileTap={{ scale: 0.97 }}>
-              {saving ? <div className="spinner" /> : <><Save size={14} /> Save Changes</>}
+              style={{ width: '100%', justifyContent: 'center', padding: '10px' }} whileTap={{ scale: 0.97 }}>
+              {saving ? <div className="spinner" /> : <><Save size={13} /> Save Changes</>}
             </motion.button>
           </form>
-        </motion.div>
-
-        {/* Appearance Section */}
-        <motion.div className="card"
-          initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <h2 className="section-title" style={{ marginBottom: '16px' }}>Appearance</h2>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px', background: 'var(--bg-input)', borderRadius: '10px', border: '1px solid var(--border)' }}>
-            <div>
-              <p style={{ fontWeight: 500, fontSize: '0.9rem', marginBottom: '2px' }}>Theme</p>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Currently using {theme} mode</p>
-            </div>
-            <motion.button onClick={toggleTheme} className="btn btn-secondary" whileTap={{ scale: 0.97 }}>
-              {theme === 'dark' ? <><Sun size={14} /> Light</> : <><Moon size={14} /> Dark</>}
-            </motion.button>
-          </div>
         </motion.div>
       </div>
     </AppLayout>

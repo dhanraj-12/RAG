@@ -26,7 +26,7 @@ from langchain_classic.schema import Document
 from sentence_transformers import CrossEncoder
 from concurrent.futures import ThreadPoolExecutor
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 
 import os
 import re
@@ -687,6 +687,51 @@ def give_final_answer(query):
     return result
 
 
+
+def generate_submission_csv(input_path, output_path="submission.csv"):
+    with open(input_path, "r", encoding="utf-8") as f:
+        queries = json.load(f)
+
+    total_queries = len(queries)
+    print(f"🚀 Starting processing of {total_queries} queries...\n")
+
+    with open(output_path, "w", newline="", encoding="utf-8") as csvfile:
+        fieldnames = ["query_id", "question", "answer", "citations"]
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+
+        for idx, item in enumerate(queries, start=1):
+            query_id = item["query_id"]
+            question = item["question"]
+
+            print(f"⏳ Processing Query {idx}/{total_queries} (ID: {query_id})...")
+            result = give_final_answer(question)
+
+            answer_text = result["answer"]
+
+            citation_texts = []
+            for c in result["citations"]:
+                citation_texts.append(
+                    f"{c['source_tag']} | Chapter: {c['chapter']} | "
+                    f"Section: {c['section']} | Title: {c['section_name']} | "
+                    f"Pages: {c.get('page_start', 'N/A')}-{c.get('page_end', 'N/A')}"
+                )
+
+            citations_combined = " || ".join(citation_texts)
+
+            writer.writerow({
+                "query_id": query_id,
+                "question": question,
+                "answer": answer_text,
+                "citations": citations_combined
+            })
+
+            print(f"✅ Query {idx} done\n")
+
+    print("🎉 submission.csv created successfully!")
+
+
+
 # ──────────────────────────────────────────────
 # Flask REST API
 # ──────────────────────────────────────────────
@@ -716,7 +761,7 @@ def handle_query():
 
     try:
         result = give_final_answer(query)
-        latency = round(time.time() - t0, 2)
+        latency: float = round(time.time() - t0, 2)  # type: ignore[call-overload]
 
         print(f"✅ Answered in {latency}s")
 
@@ -733,6 +778,59 @@ def handle_query():
         print(f"❌ Error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
+@app.route("/api/generate_csv", methods=["POST"])
+def generate_csv_api():
+    """
+    Accepts:
+    {
+        "input_path": "path/to/queries.json",
+        "output_path": "submission.csv" (optional)
+    }
+
+    Returns:
+    {
+        "success": True,
+        "message": "CSV generated",
+        "output_path": "submission.csv"
+    }
+    """
+    data = request.get_json()
+
+    input_path = data.get("input_path")
+    output_path = data.get("output_path", "submission.csv")
+
+    if not input_path:
+        return jsonify({"error": "input_path is required"}), 400
+
+    print(f"\n📄 Generating CSV from: {input_path}")
+
+    t0 = time.time()
+
+    try:
+        generate_submission_csv(input_path, output_path)
+        latency: float = round(time.time() - t0, 2)  # type: ignore[call-overload]
+
+        return jsonify({
+            "success": True,
+            "message": "CSV generated successfully",
+            "output_path": output_path,
+            "filename": os.path.basename(output_path),
+            "download_url": f"/api/download/{os.path.basename(output_path)}",
+            "latency": latency
+        })
+
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/download/<filename>", methods=["GET"])
+def download_file(filename):
+    """Serve the generated CSV file."""
+    # Ensure we only serve from the current directory or a specific allowed one
+    # For simplicity, we'll use the root of the Rag_Module
+    directory = os.getcwd()
+    return send_from_directory(directory, filename, as_attachment=True)
 
 # ──────────────────────────────────────────────
 # Main
