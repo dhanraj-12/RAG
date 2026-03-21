@@ -180,7 +180,7 @@ export default function Sidebar({ isOpen, onClose, isMobile, onResizeStart, isRe
         </div>
       </div>
       
-      {/* Bulk Query Section */}
+      {/* Bulk Query Section
       <div className="sidebar-nav" style={{ flex: '0 0 auto', paddingBottom: 0 }}>
         <button
           className={`tree-item ${location.pathname === '/bulk-query' ? 'active' : ''}`}
@@ -191,7 +191,7 @@ export default function Sidebar({ isOpen, onClose, isMobile, onResizeStart, isRe
           </span>
           <span className="tree-label">Bulk Query</span>
         </button>
-      </div>
+      </div> */}
 
       {/* Notebook Tree */}
       <div className="sidebar-nav">
